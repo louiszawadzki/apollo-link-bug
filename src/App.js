@@ -1,24 +1,49 @@
-import logo from './logo.svg';
-import './App.css';
+import "./App.css";
+import { gql } from "@apollo/client";
+
+import {
+  ApolloClient,
+  InMemoryCache,
+  ApolloProvider,
+  ApolloLink,
+  HttpLink,
+  concat,
+} from "@apollo/client";
+
+const httpLink = new HttpLink({ uri: "https://48p1r2roz4.sse.codesandbox.io" });
+const reportErrors = (errorCallback) =>
+  new ApolloLink((operation, forward) => {
+    const observable = forward(operation);
+    // if you comment the next line, there is only one request made
+    observable.subscribe({ error: errorCallback });
+    return observable;
+  });
+const errorLink = reportErrors(console.error);
+
+const client = new ApolloClient({
+  link: concat(errorLink, httpLink),
+  cache: new InMemoryCache(),
+});
+
+const onClick = () => {
+  client
+    .query({
+      query: gql`
+        query GetRates {
+          rates(currency: "USD") {
+            currency
+          }
+        }
+      `,
+    })
+    .then((result) => console.log(result));
+};
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <ApolloProvider client={client}>
+      <button onClick={onClick}>Click</button>
+    </ApolloProvider>
   );
 }
 
